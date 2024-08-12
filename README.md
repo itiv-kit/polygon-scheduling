@@ -28,7 +28,7 @@ If you use this, please cite:
   title = {Automated Polyhedron-based TDMA Schedule Design for Predictable Mixed-Criticality MPSoCs},
   booktitle = {2024 27th {{Euromicro Conference}} on {{Digital System Design}} ({{DSD}})},
   author = {Stammler, Matthias and Schade, Florian and Becker, Juergen},
-  year = {2023},
+  year = {2024},
   month = aug,
   publisher = {IEEE},
   address = {Paris, France}
