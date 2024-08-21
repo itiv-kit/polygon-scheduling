@@ -16,6 +16,9 @@ class block_step(schedule_tools.abstract_schedule_creator):
     This class has no members and only provides the implementation of the interface.
     """
 
+    def __init__(self, deadline : int = math.inf) -> None:
+        self.deadline_ = deadline
+
     def has_parallel_execution(self, poly: platform_exports.task_tools.polyhedron) -> bool:
         """
         Checks if a polyhedron has a parallel execution on another unit, e.g. a security window.
@@ -138,6 +141,41 @@ class block_step(schedule_tools.abstract_schedule_creator):
             task - The associated task
         """
         return [associated_task for associated_task in task_dict.keys() if polyh in task_dict[associated_task]][0]
+    
+    def get_number_of_shared_res(self, task_list : list[platform_exports.task_tools.task]) -> int:
+        """
+        Calculates the number of unique shared resource indexes in the task access.
+        
+        Arguments:
+            task_list : list[task] - The list of all tasks
+
+        Returns:
+            int - The number of unique shared resources
+        """
+        shared_res : set[int]= set()
+        for t in task_list:
+            if t.get_access_windows() is not None:
+                shared_res.update(t.get_access_windows().keys())
+        return len(shared_res)
+    
+    def get_task_from_id(self, id : int, all_tasks : list[platform_exports.task_tools.task]) -> platform_exports.task_tools.task:
+        """
+        Returns the task for a given ID.
+
+        Arguments:
+            id : int - The ID.
+            all_tasks : list[task] - A list of all tasks to choose from
+
+        Returns:
+            task - The corresponding task
+        """
+        tasks_with_id = [id_task for id_task in all_tasks if id_task.get_id() == id]
+        if len(tasks_with_id) > 1:
+            raise RuntimeError("Found more than 1 task with id " + str(id))
+        elif len(tasks_with_id) == 0:
+            raise RuntimeError("No task with that ID found")
+    
+        return tasks_with_id[0]
 
     def iterative_improve(
         self, schedule: schedule_tools.abstract_schedule, all_tasks: list[platform_exports.task_tools.task]
@@ -155,16 +193,17 @@ class block_step(schedule_tools.abstract_schedule_creator):
 
         # Get violating task
         no_tasks = int(numpy.unique(schedule.S_matrix_).size)
-        latest = schedule.get_latest_index()
-        latest_unit = latest.index(max(latest))
-        latest_task_idx = schedule.get_task_at(latest_unit, max(latest))
+        
+        latest_unit = schedule.get_latest_unit()
+        latest = schedule.get_latest_index_on_unit(latest_unit)
+        latest_task_idx = schedule.get_task_at(latest_unit, latest)
 
         # Clear schedule of violating task
         schedule.clear_task(latest_task_idx)
 
         # Get best fitting swapping
         violating_polyhedrons = platform_exports.task_tools.create_task_polyhedrons(
-            all_tasks[latest_task_idx], schedule.get_no_units()
+            self.get_task_from_id(latest_task_idx, all_tasks), schedule.get_no_units(), self.get_number_of_shared_res(all_tasks)
         )
         min_cost = math.inf
         swapped_task_idx: list[int] = []
@@ -180,7 +219,7 @@ class block_step(schedule_tools.abstract_schedule_creator):
             schedule.clear_task(task_to_clear)
 
         # Register violating task back to the schedule
-        self.place_next_polyhedron(schedule, violating_polyhedrons)
+        self.place_next_polyhedron(schedule, violating_polyhedrons, all_tasks)
 
         # Get not scheduled tasks
         non_scheduled_tasks: list[platform_exports.task_tools.task] = [
@@ -189,14 +228,17 @@ class block_step(schedule_tools.abstract_schedule_creator):
 
         # Create polyhedron dict for non-scheduled tasks
         polyhedron_dict: dict[platform_exports.task_tools.task, list[platform_exports.task_tools.polyhedron]] = {
-            current_task: platform_exports.task_tools.create_task_polyhedrons(current_task, schedule.get_no_units())
+            current_task: platform_exports.task_tools.create_task_polyhedrons(current_task, schedule.get_no_units(), self.get_number_of_shared_res(all_tasks))
             for current_task in non_scheduled_tasks
         }
 
         # Try to place all tasks
         while non_scheduled_tasks:
+            all_polyhedrons : list[platform_exports.task_tools.polyhedron] = []
+            for key_task in polyhedron_dict.keys():
+                all_polyhedrons.extend( polyhedron_dict[key_task])
             try:
-                placed_polyhedron = self.place_next_polyhedron(schedule, polyhedron_dict)
+                placed_polyhedron = self.place_next_polyhedron(schedule, all_polyhedrons, all_tasks)
             except RuntimeError as e:
                 print("Could still not place a polyhedron")
                 break
@@ -238,15 +280,11 @@ class block_step(schedule_tools.abstract_schedule_creator):
             t.fit_to_resolution(timing_res)
 
         # Get number of shared resources
-        shared_res : set[int]= set()
-        for t in sched_tasks:
-            if t.get_access_windows() is not None:
-                shared_res.update(t.get_access_windows().keys())
-        no_shared_res = len(shared_res)
+        no_shared_res = self.get_number_of_shared_res(sched_tasks)
         
 
         # Initialise schedule with task resolution and number of units
-        current_schedule = schedule_tools.abstract_schedule(timing_res, no_units,no_shared_resources=no_shared_res)
+        current_schedule = schedule_tools.abstract_schedule(timing_res, no_units,no_shared_resources=no_shared_res,periodic_deadline=self.deadline_)
 
         # Create a dictionary mapping tasks to polyhedrons
         polyhedron_dict: dict[platform_exports.task_tools.task, list[platform_exports.task_tools.polyhedron]] = {

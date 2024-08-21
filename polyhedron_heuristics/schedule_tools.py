@@ -37,7 +37,7 @@ class abstract_schedule:
             self.valid_ = False
 
             # If no periodic deadline is provided, generate the frame with a given max duration used for setup
-            if periodic_deadline is None or math.inf:
+            if periodic_deadline is None or periodic_deadline is math.inf:
                 self.S_matrix_ = numpy.zeros(
                     shape=[no_shared_resources + 1, no_units_, MAX_DURATION_SETUP], dtype=numpy.int16
                 )
@@ -143,6 +143,34 @@ class abstract_schedule:
             latest.append(len(reversed_matrix) - numpy.argmax(reversed_matrix != 0) - 1)
 
         return latest
+    
+    def get_latest_index_on_unit(self, u : int) -> list[int]:
+        """
+        Get the index of the latest scheduled task.
+
+        Arguments:
+            u : int - The unit
+        """
+        reversed_matrix = self.S_matrix_[0, u, ::-1]
+        latest = len(reversed_matrix) - numpy.argmax(reversed_matrix != 0) - 1
+
+        return latest
+    
+    def get_latest_unit(self) -> int:
+        """
+        Get the unit of the latest scheduled task.
+        """
+        latest = math.inf
+        chosen_unit = -1
+        for u in range(0, self.S_matrix_.shape[u_axis]):
+            reversed_matrix = self.S_matrix_[0, u, ::-1]
+            index = numpy.argmax(reversed_matrix != 0) - 1
+            if index < latest and sum(reversed_matrix) != 0:
+                chosen_unit = u
+                latest = index
+
+        return chosen_unit
+
 
     def clear_task(self, unit_id: int) -> None:
         """
@@ -155,7 +183,7 @@ class abstract_schedule:
 
     def get_swapping_tasks(
         self,
-        polyhedron: polyhedron,
+        swap_polyhedron: polyhedron,
         all_tasks: list[platform_exports.task_tools.task],
     ) -> tuple[int, list[int]]:
         """
@@ -173,12 +201,13 @@ class abstract_schedule:
 
         # Create a mask to slide over the schedule
         polyhedron_mask = polyhedron(
-            polyhedron.no_units_,
-            polyhedron.exec_unit_,
-            polyhedron.get_length(),
+            swap_polyhedron.no_units_,
+            swap_polyhedron.exec_unit_,
+            swap_polyhedron.get_length(),
             1,
-            polyhedron.acc_windows_,
-            polyhedron.sec_windows_,
+            swap_polyhedron.acc_windows_,
+            swap_polyhedron.sec_windows_,
+            swap_polyhedron.get_tensor().shape[acc_axis] - 1
         )
 
         # Create a sub matrix of the schedule, cross-product them and then count the hits.
