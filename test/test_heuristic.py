@@ -58,7 +58,7 @@ def create_test_tasks(
     acc_units = []
     if acc_windows != 0:
         acc_positions = random.sample(range(0,slack_schedule_length), acc_windows)
-        acc_units = [i % acc_windows for i in range(acc_windows)]
+        acc_units = [i % acc_window_resources + 1 for i in range(acc_windows)]
 
     sec_windows_starts = []
     if sec_windows != 0:

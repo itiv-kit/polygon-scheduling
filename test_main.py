@@ -21,7 +21,8 @@ def test_one(length : int, timing_slack : int, no_tasks:int, no_units : int, no_
         t.id_ = index
         index += 1
 
-    schedule_creator = polyhedron_heuristics.block_step.block_step()
+    cost_function = polyhedron_heuristics.heterogeneous_annealing.soft_cost_function(tasks,no_units,length)
+    schedule_creator = polyhedron_heuristics.heterogeneous_annealing.annealing_schedule_creator(cost_function)
     
     start_time = time.time()
     schedule = schedule_creator.create_schedule(tasks, no_units)

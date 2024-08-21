@@ -6,6 +6,9 @@ import pathlib
 import csv
 import numpy
 
+t_axis = 2
+u_axis = 1
+acc_axis = 0
 
 class task:
     """
@@ -460,19 +463,22 @@ class polyhedron:
         # Access window
         if self.acc_windows_ is not None:
             for resource_index in self.acc_windows_.keys():
+                if resource_index == 0:
+                    raise RuntimeError("Resource index can't be 0!") # <- resource_index != 0 to keep execution plane empty!
+                
                 windows = self.acc_windows_[resource_index]
                 for u in range(0, self.no_units_):
                     for acc_window in windows:
                         for t in range(acc_window[0], acc_window[1]):
-                            self.tensor_[resource_index][u][t] = self.task_id_
+                            self.tensor_[resource_index][u][t] = self.task_id_ # <- resource_index != 0 to keep execution plane empty!
 
         # Security window
         if self.sec_windows_ is not None:
             for u in range(0, self.no_units_):
                 for sec_windows in self.sec_windows_:
                     for t in range(sec_windows[0], sec_windows[1]):
-                        self.tensor_[0][u][t] = self.task_id_
-                        self.tensor_[1][u][t] = self.task_id_
+                        for sec_idx in range(self.tensor_.shape[acc_axis]):
+                            self.tensor_[sec_idx][u][t] = self.task_id_                        
 
     def get_task_id(self) -> int:
         """

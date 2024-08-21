@@ -1,0 +1,5 @@
+Name;ExTime;Path;Crit;Deadline;ExclWindow;AccUnit;AccWindow
+CT1;200;\home\test1;1;1000;;1;10/20
+CT2;250;\home\test2;1;1500;;2;24/25
+CT3;150;\home\test3;1;2000;10/20;;
+CT4;150;\home\test4;1;2000;;1;40/50

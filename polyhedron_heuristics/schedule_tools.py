@@ -1,16 +1,12 @@
 import io
 import math
 import sys
-import platform_exports.task_tools
+from platform_exports.task_tools import polyhedron, acc_axis, t_axis, u_axis
 import platform_exports.unit_tools
 import numpy
 
 EMPTY_SYMBOL = None
 MAX_DURATION_SETUP = 4000
-
-t_axis = 2
-u_axis = 1
-acc_axis = 0
 
 
 class abstract_schedule:
@@ -92,7 +88,7 @@ class abstract_schedule:
         """
         return self.S_matrix_.shape[acc_axis]
 
-    def get_first_free_t(self, polyhedron: platform_exports.task_tools.polyhedron) -> int:
+    def get_first_free_t(self, polyhedron: polyhedron) -> int:
         """
         Get the first free time slot for a given polyhedron.
         Returns the length of the matrix, if no suitable place is found.
@@ -113,13 +109,13 @@ class abstract_schedule:
 
         return self.S_matrix_.shape[t_axis]
 
-    def add_polyhedron_to_schedule(self, polyhedron: platform_exports.task_tools.polyhedron, t_start: int) -> None:
+    def add_polyhedron_to_schedule(self, polyhedron: polyhedron, t_start: int) -> None:
         """
         Register a polyhedron to the schedule.
 
         Arguments:
             polyhedron : polyhedron - The polyhedron to register
-            t_start : the time to register the polyhedron.
+            t_start : int - The time to register the polyhedron.
 
         """
         self.S_matrix_ = register_polyhedron(self, t_start, polyhedron)
@@ -159,7 +155,7 @@ class abstract_schedule:
 
     def get_swapping_tasks(
         self,
-        polyhedron: platform_exports.task_tools.polyhedron,
+        polyhedron: polyhedron,
         all_tasks: list[platform_exports.task_tools.task],
     ) -> tuple[int, list[int]]:
         """
@@ -176,7 +172,7 @@ class abstract_schedule:
         best_list: list[int] = []
 
         # Create a mask to slide over the schedule
-        polyhedron_mask = platform_exports.task_tools.polyhedron(
+        polyhedron_mask = polyhedron(
             polyhedron.no_units_,
             polyhedron.exec_unit_,
             polyhedron.get_length(),
@@ -210,7 +206,7 @@ class abstract_schedule:
 
 
 def register_polyhedron(
-    schedule: abstract_schedule, t_start: int, polyhedron: platform_exports.task_tools.polyhedron
+    schedule: abstract_schedule, t_start: int, polyhedron: polyhedron
 ) -> numpy.ndarray:
     """
     Register a polyhedron to the schedule. Only works, if the position at the polyhedron is free.
