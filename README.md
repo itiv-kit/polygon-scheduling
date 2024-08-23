@@ -27,7 +27,8 @@ Furthermore, a simulated annealing approach is presented for multiple executions
 ## Citation
 If you use this, please cite:
 
-```@inproceedings{bawatna2022,
+```
+@inproceedings{stammler2024,
   title = {Automated Polyhedron-based TDMA Schedule Design for Predictable Mixed-Criticality MPSoCs},
   booktitle = {2024 27th {{Euromicro Conference}} on {{Digital System Design}} ({{DSD}})},
   author = {Stammler, Matthias and Schade, Florian and Becker, Juergen},
