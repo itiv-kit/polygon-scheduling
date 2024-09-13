@@ -5,10 +5,13 @@ import io
 class unit:
     def __init__(self, name: str, unit_type: int) -> None:
         self.name_ = name
-        self.unit_type_ = unit_type
+        self.unit_type_idx_ = unit_type
 
     def get_name(self) -> str:
         return self.name_
+    
+    def get_type(self) -> int:
+        return self.unit_type_idx_
 
 
 class unit_builder:

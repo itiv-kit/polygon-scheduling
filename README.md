@@ -4,8 +4,6 @@ Accompanying open source code for the paper Automated Polyhedron-based TDMA Sche
 
 In this work, we introduce an algorithm creating scheduling tables for TDMA schedulers that support isolation mechanisms in multicore systems. Using a constructive approach, the resulting scheduling tables support mechanisms for parallel access to shared resources and windows for exclusive execution.
 
-Furthermore, a simulated annealing approach is presented for multiple executions per TDMA table in the file ```heterogeneous_annealing.py```.
-
 ## Structure
 ```
 - examples
@@ -17,7 +15,6 @@ Furthermore, a simulated annealing approach is presented for multiple executions
     | - unit_tools.py : Unit class and builder
 - polyhedron_heuristics:
     | - block_step.py : Main implementation of Block-Step Algorithm
-    | - heterogeneous_annealing.py : Implementation of simulated annealing and corresponding cost function
     | - schedule_tools.py : Abstract schedule representation
 - test
     | - test_heuristic.py : Class to generate random task sets for testing
@@ -27,8 +24,7 @@ Furthermore, a simulated annealing approach is presented for multiple executions
 ## Citation
 If you use this, please cite:
 
-```
-@inproceedings{stammler2024,
+```@inproceedings{bawatna2022,
   title = {Automated Polyhedron-based TDMA Schedule Design for Predictable Mixed-Criticality MPSoCs},
   booktitle = {2024 27th {{Euromicro Conference}} on {{Digital System Design}} ({{DSD}})},
   author = {Stammler, Matthias and Schade, Florian and Becker, Juergen},

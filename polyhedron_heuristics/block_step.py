@@ -178,7 +178,7 @@ class block_step(schedule_tools.abstract_schedule_creator):
         return tasks_with_id[0]
 
     def iterative_improve(
-        self, schedule: schedule_tools.abstract_schedule, all_tasks: list[platform_exports.task_tools.task]
+        self, schedule: schedule_tools.abstract_schedule, all_tasks: list[platform_exports.task_tools.task], units: list[platform_exports.unit_tools.unit]
     ) -> tuple[schedule_tools.abstract_schedule, int]:
         """
         Iterative improvement for given abstract schedule.
@@ -203,7 +203,7 @@ class block_step(schedule_tools.abstract_schedule_creator):
 
         # Get best fitting swapping
         violating_polyhedrons = platform_exports.task_tools.create_task_polyhedrons(
-            self.get_task_from_id(latest_task_idx, all_tasks), schedule.get_no_units(), self.get_number_of_shared_res(all_tasks)
+            self.get_task_from_id(latest_task_idx, all_tasks), self.get_number_of_shared_res(all_tasks), units
         )
         min_cost = math.inf
         swapped_task_idx: list[int] = []
@@ -228,15 +228,15 @@ class block_step(schedule_tools.abstract_schedule_creator):
 
         # Create polyhedron dict for non-scheduled tasks
         polyhedron_dict: dict[platform_exports.task_tools.task, list[platform_exports.task_tools.polyhedron]] = {
-            current_task: platform_exports.task_tools.create_task_polyhedrons(current_task, schedule.get_no_units(), self.get_number_of_shared_res(all_tasks))
+            current_task: platform_exports.task_tools.create_task_polyhedrons(current_task, self.get_number_of_shared_res(all_tasks), units)
             for current_task in non_scheduled_tasks
         }
 
         # Try to place all tasks
         while non_scheduled_tasks:
             all_polyhedrons : list[platform_exports.task_tools.polyhedron] = []
-            for key_task in polyhedron_dict.keys():
-                all_polyhedrons.extend( polyhedron_dict[key_task])
+            for key_task in non_scheduled_tasks:
+                all_polyhedrons.extend(polyhedron_dict[key_task])
             try:
                 placed_polyhedron = self.place_next_polyhedron(schedule, all_polyhedrons, all_tasks)
             except RuntimeError as e:
@@ -244,6 +244,8 @@ class block_step(schedule_tools.abstract_schedule_creator):
                 break
 
             placed_task = self.get_associated_task(placed_polyhedron, polyhedron_dict)
+
+            # Remove tasks from the lists.
             non_scheduled_tasks.remove(placed_task)
 
         # Count how many tasks are not placed
@@ -255,7 +257,7 @@ class block_step(schedule_tools.abstract_schedule_creator):
     def create_schedule(
         self,
         sched_tasks: list[platform_exports.task_tools.task],
-        no_units: int,
+        units: list[platform_exports.unit_tools.unit]
     ) -> schedule_tools.abstract_schedule:
         """
         Main entry point for schedule creation based on the block step algorithm.
@@ -281,14 +283,16 @@ class block_step(schedule_tools.abstract_schedule_creator):
 
         # Get number of shared resources
         no_shared_res = self.get_number_of_shared_res(sched_tasks)
-        
 
+        # Get number of units
+        no_units = len(units)
+        
         # Initialise schedule with task resolution and number of units
         current_schedule = schedule_tools.abstract_schedule(timing_res, no_units,no_shared_resources=no_shared_res,periodic_deadline=self.deadline_)
 
         # Create a dictionary mapping tasks to polyhedrons
         polyhedron_dict: dict[platform_exports.task_tools.task, list[platform_exports.task_tools.polyhedron]] = {
-            current_task: platform_exports.task_tools.create_task_polyhedrons(current_task, no_units, no_shared_res)
+            current_task: platform_exports.task_tools.create_task_polyhedrons(current_task, no_shared_res, units)
             for current_task in sched_tasks
         }
 
@@ -320,7 +324,7 @@ class block_step(schedule_tools.abstract_schedule_creator):
         # If there are still tasks not scheduled, do iterative improvement
         iterations = 0
         while False in marked_scheduled.values() and iterations < MAX_RETRY_ITERATIONS:
-            current_schedule, _ = self.iterative_improve(current_schedule, sched_tasks)
+            current_schedule, _ = self.iterative_improve(current_schedule, sched_tasks, units)
 
             # Get task IDs of scheduled tasks
             currently_scheduled_tasks = current_schedule.get_scheduled_tasks()

@@ -199,24 +199,13 @@ class abstract_schedule:
         best_cost = math.inf
         best_list: list[int] = []
 
-        # Create a mask to slide over the schedule
-        polyhedron_mask = polyhedron(
-            swap_polyhedron.no_units_,
-            swap_polyhedron.exec_unit_,
-            swap_polyhedron.get_length(),
-            1,
-            swap_polyhedron.acc_windows_,
-            swap_polyhedron.sec_windows_,
-            swap_polyhedron.get_tensor().shape[acc_axis] - 1
-        )
-
         # Create a sub matrix of the schedule, cross-product them and then count the hits.
         # Repeat for every position and chose the one with the fewest hits.
-        t_x = polyhedron_mask.tensor_.shape[t_axis]
+        t_x = swap_polyhedron.tensor_.shape[t_axis]
         length_diff = self.S_matrix_.shape[t_axis] - t_x
         for t in range(0, length_diff):
             used_submatrix = self.S_matrix_[:, :, t : t + t_x]
-            mult = numpy.multiply(used_submatrix, polyhedron_mask.tensor_)
+            mult = numpy.multiply(used_submatrix, swap_polyhedron.generate_mask())
             unique_tasks_idx = numpy.unique(mult)
             unique_tasks_idx = unique_tasks_idx[unique_tasks_idx != 0]
             for index in unique_tasks_idx:
